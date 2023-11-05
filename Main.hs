@@ -1,36 +1,29 @@
-module Main where
-
+import qualified Data.Map as Map
 import System.Exit
 import System.Process
 
-import Control.Monad.Trans.Maybe
+-- Need to implement function to detect cycles
+--TODO
 
--- A function to run a shell command and return its exit code as Maybe
-runShellCommand :: String -> IO (Maybe ExitCode)
-runShellCommand cmd = do
-    (_, _, _, processHandle) <- createProcess (shell cmd)
-    waitForProcess processHandle
+-- Then need to sort them topologically
+--type Stage = String
+--type Command = String
+--topologicalSort :: Map.Map Stage [(Command, [Stage])] -> Stage -> [(Command, Stage)]
 
-{- 
-Let's start by representing two basic scenarios using Monads.
-    1. A linear chain of two processes where Process A runs before process B
-    2. A linear chain of two processes where Process A runs before process B, but process A fails so B is never run.
-Note for this starting point we don't care about determining whether a dependency needs to run or not. We're just interested
-in:
-    (a) making the dependencies run first
-    (b) stopping the pipeline if one of the dependencies fails.
--}
+-- Then need to execute them in order, failing fast if any steps fail
+exampleCommands :: [(String, String, [String])]
+exampleCommands = [("A", "echo", ["first step"]),
+                   ("B", "false", []),
+                   ("C", "echo", ["C", "A"])]
 
-maybeSuccess :: IO ExitCode -> Maybe IO ExitCode
+runCommands :: [(String, String, [String])] -> IO ()
+runCommands [] = return ()
+runCommands ((stage, cmd, args):rest) = do
+    putStrLn $ "Running command: " ++ cmd ++ " " ++ unwords args
+    exitCode <- rawSystem cmd args
+    case exitCode of
+        ExitSuccess -> runCommands rest
+        ExitFailure _ -> putStrLn $ "Command failed: " ++ cmd
 
-
-x :: IO ExitCode
-x = createProcess (shell "echo 'Process A'") >>= \(_, _, _, processHandle) -> waitForProcess processHandle
-
---(_, _, _, processHandle) <- createProcess (shell "echo 'Process A'")
---exitCode <- waitForProcess processHandle
--- print exitCode
 main :: IO ()
-main = do
-    code <- x
-    print code
+main = runCommands exampleCommands
