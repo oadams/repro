@@ -31,5 +31,6 @@ runCommands ((stage, cmd, args):rest) = do
 
 main :: IO ()
 main = do
-    Parse.someFunc
+    dag <- Parse.readDAG "repro.yaml"
+    print dag
     runCommands exampleCommands

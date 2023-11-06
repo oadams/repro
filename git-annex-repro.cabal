@@ -37,6 +37,7 @@ library
       HsYAML
     , base >=4.7 && <5
     , bytestring
+    , containers
     , text
   default-language: Haskell2010
 
@@ -73,6 +74,7 @@ test-suite git-annex-repro-test
       HsYAML
     , base >=4.7 && <5
     , bytestring
+    , containers
     , git-annex-repro
     , text
   default-language: Haskell2010

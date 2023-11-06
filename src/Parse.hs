@@ -1,9 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Parse
-    ( someFunc
+    ( readDAG
     ) where
 
+import qualified Data.Map as Map
 import Data.YAML
 import qualified Data.Text as T
 import qualified Data.ByteString.Lazy as BL
@@ -17,22 +18,29 @@ data YamlStage = YamlStage
 
 instance FromYAML YamlStage where
    parseYAML = withMap "YamlStage" $ \m -> YamlStage
-       <$> m .: "yamlName"
-       <*> m .: "yamlCmd"
-       <*> m .:? "yamlDeps" .!= []
-       <*> m .:? "yamlOuts" .!= []
+       <$> m .: "name"
+       <*> m .: "cmd"
+       <*> m .:? "deps" .!= []
+       <*> m .:? "outs" .!= []
 
-data Stage = Stage { name :: T.Text
-                   , cmd  :: T.Text
-                   , deps :: [Stage]
-                   } deriving Show
+data Stage = Stage {
+  name :: T.Text,
+  cmd  :: T.Text
+} deriving (Show, Eq, Ord)
 
-someFunc :: IO ()
-someFunc = do
-    contents <- BL.readFile "repro.yaml"
-    let decoded = decode1 contents :: Either (Pos,String) [YamlStage]
-    case decoded of
-        Left err -> putStrLn $ "An error occurred: " ++ show err
-        Right stages -> do
-            -- Process your stages here
-            print stages
+-- A DAG is represented by a map from a stage name to a stage and its dependencies
+newtype DAG = DAG (Map.Map T.Text (Stage, [T.Text])) deriving (Show)
+
+emptyDAG :: DAG
+emptyDAG = DAG Map.empty
+
+constructDAG :: [YamlStage] -> DAG
+constructDAG stages = DAG $ Map.fromList $ map (\stage -> (yamlName stage, (Stage (yamlName stage) (yamlCmd stage), yamlDeps stage))) stages 
+
+readDAG :: FilePath -> IO DAG
+readDAG filepath = do
+    contents <- BL.readFile filepath
+    let eitherStages = decode1 contents :: Either (Pos, String) [YamlStage]
+    case eitherStages of
+        Left err -> error $ "Failed to parse YAML: " ++ snd err
+        Right stages -> return $ constructDAG stages

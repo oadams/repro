@@ -24,6 +24,7 @@ dependencies:
 - HsYAML
 - text
 - bytestring
+- containers
 
 ghc-options:
 - -Wall
