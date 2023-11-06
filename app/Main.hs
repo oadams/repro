@@ -2,7 +2,6 @@ module Main (main) where
 
 import qualified Parse
 
-import qualified Data.Map as Map
 import System.Exit ( ExitCode(ExitFailure, ExitSuccess) )
 import System.Process
 

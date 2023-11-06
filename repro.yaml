@@ -1,7 +1,6 @@
 - name: firststage
   cmd: echo "hello" > out1.txt
   outs: [out1.txt]
-  deps: [out3.txt]
 - name: secondstage
   cmd: false; echo "something" > out2.txt
   deps: [out1.txt]

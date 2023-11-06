@@ -8,6 +8,7 @@ module Parse
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Data.YAML
+    ( (.!=), (.:), (.:?), decode1, withMap, FromYAML(..), Pos )
 import Data.Text (Text)
 import qualified Data.ByteString.Lazy as BL
 
@@ -72,12 +73,10 @@ isCyclic (DAG dagMap) = any hasCycle (Map.keys dagMap)
 
 readDAG :: FilePath -> IO DAG
 readDAG filepath = do
-    contents <- BL.readFile filepath
-    let eitherStages = decode1 contents :: Either (Pos, String) [YamlStage]
-    case eitherStages of
-        Left err -> error $ "Failed to parse YAML: " ++ snd err
-        Right stages -> do
-            let dag = constructDAG stages
-            return $ if isCyclic dag
-                     then error "Cycle detected!"
-                     else dag
+  contents <- BL.readFile filepath
+  let eitherStages = decode1 contents :: Either (Pos, String) [YamlStage]
+  case eitherStages of
+    Left err -> error $ "Failed to parse YAML: " ++ snd err
+    Right stages -> do
+      let dag = constructDAG stages
+      return $ if isCyclic dag then error "Cycle detected!" else dag
