@@ -1,3 +1,7 @@
+module Main (main) where
+
+import Lib
+
 import qualified Data.Map as Map
 import System.Exit
 import System.Process
