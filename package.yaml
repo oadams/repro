@@ -46,6 +46,8 @@ executables:
     - -with-rtsopts=-N
     dependencies:
     - git-annex-repro
+    - containers
+    - process
 
 tests:
   git-annex-repro-test:
