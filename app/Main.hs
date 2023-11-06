@@ -1,6 +1,6 @@
 module Main (main) where
 
-import Lib
+import Parse
 
 import qualified Data.Map as Map
 import System.Exit

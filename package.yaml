@@ -21,6 +21,8 @@ description:         Please see the README on GitHub at <https://github.com/oada
 
 dependencies:
 - base >= 4.7 && < 5
+- HsYAML
+- text
 
 ghc-options:
 - -Wall
@@ -48,6 +50,8 @@ executables:
     - git-annex-repro
     - containers
     - process
+    - HsYAML
+    - text
 
 tests:
   git-annex-repro-test:
