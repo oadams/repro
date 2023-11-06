@@ -6,6 +6,7 @@ module Parse
 
 import Data.YAML
 import qualified Data.Text as T
+import qualified Data.ByteString.Lazy as BL
 
 data Stage = Stage
     { cmd  :: T.Text
@@ -16,8 +17,15 @@ data Stage = Stage
 instance FromYAML Stage where
    parseYAML = withMap "Stage" $ \m -> Stage
        <$> m .: "cmd"
-       <*> m .: "deps" .!= []
+       <*> m .:? "deps" .!= []
        <*> m .:? "outs" .!= []
 
 someFunc :: IO ()
-someFunc = putStrLn "someFunc"
+someFunc = do
+    contents <- BL.readFile "repro.yaml"
+    let decoded = decode contents :: Either (Pos,String) [[Stage]]
+    case decoded of
+        Left err -> putStrLn $ "An error occurred: " ++ show err
+        Right stages -> do
+            -- Process your stages here
+            print stages

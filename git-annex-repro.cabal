@@ -36,6 +36,7 @@ library
   build-depends:
       HsYAML
     , base >=4.7 && <5
+    , bytestring
     , text
   default-language: Haskell2010
 
@@ -51,6 +52,7 @@ executable git-annex-repro-exe
   build-depends:
       HsYAML
     , base >=4.7 && <5
+    , bytestring
     , containers
     , git-annex-repro
     , process
@@ -70,6 +72,7 @@ test-suite git-annex-repro-test
   build-depends:
       HsYAML
     , base >=4.7 && <5
+    , bytestring
     , git-annex-repro
     , text
   default-language: Haskell2010

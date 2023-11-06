@@ -1,9 +1,9 @@
 module Main (main) where
 
-import Parse
+import qualified Parse
 
 import qualified Data.Map as Map
-import System.Exit
+import System.Exit ( ExitCode(ExitFailure, ExitSuccess) )
 import System.Process
 
 -- Need to implement function to detect cycles
@@ -30,4 +30,6 @@ runCommands ((stage, cmd, args):rest) = do
         ExitFailure _ -> putStrLn $ "Command failed: " ++ cmd
 
 main :: IO ()
-main = runCommands exampleCommands
+main = do
+    Parse.someFunc
+    runCommands exampleCommands
