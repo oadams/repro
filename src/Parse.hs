@@ -2,7 +2,7 @@
 
 module Parse
     ( readDAG
-    , Stage
+    , Stage(..)
     , DAG(..)
     ) where
 
@@ -72,6 +72,8 @@ isCyclic (DAG dagMap) = any hasCycle (Map.keys dagMap)
           in any (dfs visited') children
 
 
+-- TODO: Explore using liftIO, monad combinators, etc in order to effectly nest the Either values in the IO.
+-- That might not actually be more readable than this sort of indented nesting below. I'm not sure what would be better.
 readDAG :: FilePath -> IO DAG
 readDAG filepath = do
   contents <- BL.readFile filepath

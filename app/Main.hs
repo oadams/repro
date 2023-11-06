@@ -2,7 +2,7 @@ module Main (main) where
 
 import Parse ( readDAG
              , DAG(..)
-             , Stage
+             , Stage(..)
              )
 
 import qualified Data.Map as Map
@@ -11,29 +11,28 @@ import qualified Data.Set as Set
 import System.Exit ( ExitCode(ExitFailure, ExitSuccess) )
 import System.Process
 
--- Need to implement function to detect cycles
---TODO
-
--- Then need to sort them topologically
---type Stage = String
---type Command = String
---topologicalSort :: Map.Map Stage [(Command, [Stage])] -> Stage -> [(Command, Stage)]
-
 -- Then need to execute them in order, failing fast if any steps fail
 exampleCommands :: [(String, String, [String])]
 exampleCommands = [("A", "echo", ["first step"]),
                    ("B", "false", []),
                    ("C", "echo", ["C", "A"])]
 
+
+-- I should construct the graph from YAML in Parse.hs but then in this module define isCyclic and then just call isCyclic
+-- when topologicalSort is called. That way topologicalSort never has to assume isCyclic has already been called. An 
+-- alternative option would be to define both a Graph type and a DAG type, with some sort of confirmCyclic :: Graph -> Maybe DAG
+-- and topologicalSort :: DAG -> [Stage], but that is probably not as good as topologicalSort :: DAG -> Maybe [Stage]
+
+{-
 topologicalSort :: DAG -> [Stage]
 topologicalSort (DAG dagMap) = go initialSources Set.empty [] dagMap
   where
     -- Find all nodes that have no incoming edges
-    initialSources = Map.keysSet $ Map.filter (null . snd) dagMap
+    initialSources = Map.keysSet $ Map.filter (null . snd) dagMap --Can I refactor the data structures so that instead of snd here I can talk about deps?
 
     go :: Set.Set Text -> Set.Set Text -> [Stage] -> Map.Map Text (Stage, [Text]) -> [Stage]
     go sources visited sorted graph
-      | Set.null sources = reverse sorted  -- If there are no sources left, we're done
+      | Set.null sources = reverse sorted -- If there are no sources left, we're done
       | otherwise = 
           let -- Pick a source and remove it from sources
               (source, remainingSources) = Set.deleteFindMin sources
@@ -53,6 +52,7 @@ topologicalSort (DAG dagMap) = go initialSources Set.empty [] dagMap
     updateNeighbors neighbor (st, deps)
       | neighbor `Set.member` sources = (st, deps)
       | otherwise = (st, filter (`Set.notMember` sources) deps)
+-}
 
 runCommands :: [(String, String, [String])] -> IO ()
 runCommands [] = return ()
