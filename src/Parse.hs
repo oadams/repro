@@ -2,7 +2,8 @@
 
 module Parse
     ( readDAG
-    , DAG
+    , Stage
+    , DAG(..)
     ) where
 
 import qualified Data.Set as Set
@@ -29,7 +30,7 @@ instance FromYAML YamlStage where
 data Stage = Stage {
   name :: Text,
   cmd  :: Text
-} deriving (Show, Eq, Ord)
+} deriving (Show, Eq)
 
 -- A DAG is represented by a map from a stage name to a stage and its dependencies
 newtype DAG = DAG (Map.Map Text (Stage, [Text])) deriving (Show)
