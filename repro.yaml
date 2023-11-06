@@ -1,2 +1,11 @@
 - name: firststage
-  cmd: echo "hello"
+  cmd: echo "hello" > out1.txt
+  outs: [out1.txt]
+- name: secondstage
+  cmd: false; echo "something" > out2.txt
+  deps: [out1.txt]
+  outs: [out2.txt]
+- name: thirdstage
+  cmd: echo "world"
+  deps: [out2.txt]
+
