@@ -5,6 +5,7 @@ module Parse
     , DAG
     ) where
 
+import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Data.YAML
 import Data.Text (Text)
@@ -51,10 +52,32 @@ constructDAG yamlStages = DAG $ foldr addDependencies initialMap yamlStages
              then Map.adjust (\(stage, deps) -> (stage, sourceName : deps)) (yamlName ysTarget) stageMapTarget
              else stageMapTarget
 
+
+-- This could be optimized by keeping track of an overall set of visited nodes between calls to each DFS. But this is fine for now.
+isCyclic :: DAG -> Bool
+isCyclic (DAG dagMap) = any hasCycle (Map.keys dagMap)
+  where
+    hasCycle :: Text -> Bool
+    hasCycle node = dfs Set.empty node
+
+    dfs :: Set.Set Text -> Text -> Bool
+    dfs visited node
+      | node `Set.member` visited = True
+      | otherwise =
+          --let children = fromMaybe [] $ fmap snd (Map.lookup node dagMap)
+          let children = maybe [] snd (Map.lookup node dagMap)
+              visited' = Set.insert node visited
+          in any (dfs visited') children
+
+
 readDAG :: FilePath -> IO DAG
 readDAG filepath = do
     contents <- BL.readFile filepath
     let eitherStages = decode1 contents :: Either (Pos, String) [YamlStage]
     case eitherStages of
         Left err -> error $ "Failed to parse YAML: " ++ snd err
-        Right stages -> return $ constructDAG stages
+        Right stages -> do
+            let dag = constructDAG stages
+            return $ if isCyclic dag
+                     then error "Cycle detected!"
+                     else dag
