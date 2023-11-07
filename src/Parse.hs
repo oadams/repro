@@ -54,6 +54,8 @@ constructDAG yamlStages = DAG $ foldr addDependencies initialMap yamlStages
              then Map.adjust (\(stage, deps) -> (stage, sourceName : deps)) (yamlName ysTarget) stageMapTarget
              else stageMapTarget
 
+-- TODO I also need to check that there aren't duplicate stage names in the YAML
+
 
 -- This could be optimized by keeping track of an overall set of visited nodes between calls to each DFS. But this is fine for now.
 isCyclic :: DAG -> Bool

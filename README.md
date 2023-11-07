@@ -10,5 +10,6 @@ To-Do:
 - [ ] Similarly, support for dependencies that are tracked in git-annex.
 - [ ] Support incremental processing. YAML should support stages that operate on files in a directory indepedently.
 - [ ] Robust testing, perhaps using Quickcheck.
+- [ ] Address all the warnings at compile time
 - [ ] Improve error reporting at all stages of potential failure.
 - [ ] Raise warnings if there are programs specified in the command that aren't local scripts.
