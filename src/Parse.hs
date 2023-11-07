@@ -7,6 +7,7 @@ module Parse
     , DAG(..)
     , constructDAG
     , isCyclic
+    , duplicateStageNames
     ) where
 
 import qualified Data.Set as Set
@@ -58,7 +59,8 @@ constructDAG yamlStages = DAG $ foldr addDependencies initialMap yamlStages
              else stageMapTarget
 
 -- TODO I also need to check that there aren't duplicate stage names in the YAML
-
+duplicateStageNames :: [YamlStage] -> Bool
+duplicateStageNames stages = length stages /= Set.size (Set.fromList [yamlName stage | stage <- stages])
 
 -- This could be optimized by keeping track of an overall set of visited nodes between calls to each DFS. But this is fine for now.
 isCyclic :: DAG -> Bool
