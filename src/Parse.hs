@@ -29,7 +29,7 @@ instance FromYAML YamlStage where
 
 data Stage = Stage {
   name :: Text,
-  cmd  :: Text
+  command  :: Text
 } deriving (Show, Eq)
 
 -- A DAG is represented by a map from a stage name to a stage and its dependencies

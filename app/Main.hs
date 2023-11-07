@@ -5,11 +5,12 @@ import Parse ( readDAG
              , Stage(..)
              )
 
+import Data.Maybe (catMaybes)
 import qualified Data.Map as Map
-import Data.Text (Text)
+import Data.Text (Text, unpack)
 import qualified Data.Set as Set
--- import System.Exit ( ExitCode(ExitFailure, ExitSuccess) )
--- import System.Process
+import System.Exit ( ExitCode(ExitFailure, ExitSuccess) )
+import System.Process
 
 {-
 -- Then need to execute them in order, failing fast if any steps fail
@@ -86,6 +87,11 @@ nameDag (DAG mapDag) = Map.map getDeps mapDag
     getDeps :: (Stage, [Text]) -> [Text]
     getDeps (_, deps) = deps
 
+getOrderedCommands :: DAG -> [Text] -> [Text]
+getOrderedCommands (DAG mapDAG) orderedStages =
+    let values = catMaybes $ map (`Map.lookup` mapDAG) orderedStages
+    in [command $ fst val | val <- values]
+
 {-
 runCommands :: [(String, String, [String])] -> IO ()
 runCommands [] = return ()
@@ -97,10 +103,22 @@ runCommands ((stage, cmd, args):rest) = do
         ExitFailure _ -> putStrLn $ "Command failed: " ++ cmd
 -}
 
+runCommands :: [Text] -> IO()
+runCommands [] = return ()
+runCommands (cmdtext:rest) = do
+    let cmd = unpack cmdtext
+    putStrLn $ cmd
+    exitCode <- system $ cmd
+    case exitCode of 
+        ExitSuccess -> runCommands rest
+        ExitFailure _ -> putStrLn $ "Command failed: " ++ cmd
+
 main :: IO ()
 main = do
     dag <- Parse.readDAG "repro.yaml"
     print dag
-    let commands = tSort dag
-    print commands
-    -- runCommands commands
+    let orderedStages = tSort dag
+    print orderedStages
+    let orderedCommands = getOrderedCommands dag orderedStages
+    print orderedCommands
+    runCommands orderedCommands
