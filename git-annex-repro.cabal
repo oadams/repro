@@ -76,5 +76,7 @@ test-suite git-annex-repro-test
     , bytestring
     , containers
     , git-annex-repro
+    , tasty
+    , tasty-hunit
     , text
   default-language: Haskell2010

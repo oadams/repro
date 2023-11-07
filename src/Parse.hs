@@ -2,8 +2,11 @@
 
 module Parse
     ( readDAG
+    , YamlStage(..)
     , Stage(..)
     , DAG(..)
+    , constructDAG
+    , isCyclic
     ) where
 
 import qualified Data.Set as Set
