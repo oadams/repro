@@ -40,13 +40,17 @@ data Stage = Stage {
 newtype DAG = DAG (Map.Map Text (Stage, [Text])) deriving (Show)
 
 -- Adjusted constructDag to consider outs and deps for building the DAG
-constructDAG :: [YamlStage] -> DAG
-constructDAG yamlStages = DAG $ foldr addDependencies initialMap yamlStages
+constructDAG :: [YamlStage] -> Either String DAG
+constructDAG yamlStages
+  | duplicateStageNames yamlStages = Left "Error: Duplicate stage names."
+  | isCyclic dag = Left "Error: Graph contains cycles."
+  | otherwise = Right dag
   where
+    dag :: DAG
+    dag = DAG $ foldr addDependencies initialMap yamlStages
     -- Step 1: Initialize the DAG with stages without dependencies
     initialMap :: Map.Map Text (Stage, [Text])
     initialMap = Map.fromList $ map (\ys -> (yamlName ys, (Stage (yamlName ys) (yamlCmd ys), []))) yamlStages
-
     -- Step 2: For each YamlStage, find stages that have any of its 'outs' in their 'deps'
     addDependencies :: YamlStage -> Map.Map Text (Stage, [Text]) -> Map.Map Text (Stage, [Text])
     addDependencies ys stageMap = foldr (addDependence (yamlName ys)) stageMap yamlStages
@@ -54,9 +58,9 @@ constructDAG yamlStages = DAG $ foldr addDependencies initialMap yamlStages
         addDependence :: Text -> YamlStage -> Map.Map Text (Stage, [Text]) -> Map.Map Text (Stage, [Text])
         addDependence sourceName ysTarget stageMapTarget =
           if any (`elem` yamlDeps ysTarget) (yamlOuts ys)
-             -- If any of 'outs' is in 'deps' of the target, add the source as a dependency
-             then Map.adjust (\(stage, deps) -> (stage, sourceName : deps)) (yamlName ysTarget) stageMapTarget
-             else stageMapTarget
+            -- If any of 'outs' is in 'deps' of the target, add the source as a dependency
+            then Map.adjust (\(stage, deps) -> (stage, sourceName : deps)) (yamlName ysTarget) stageMapTarget
+            else stageMapTarget
 
 -- TODO I also need to check that there aren't duplicate stage names in the YAML
 duplicateStageNames :: [YamlStage] -> Bool
@@ -67,7 +71,7 @@ isCyclic :: DAG -> Bool
 isCyclic (DAG dagMap) = any hasCycle (Map.keys dagMap)
   where
     hasCycle :: Text -> Bool
-    hasCycle node = dfs Set.empty node
+    hasCycle = dfs Set.empty
 
     dfs :: Set.Set Text -> Text -> Bool
     dfs visited node
@@ -88,5 +92,7 @@ readDAG filepath = do
   case eitherStages of
     Left err -> error $ "Failed to parse YAML: " ++ snd err
     Right stages -> do
-      let dag = constructDAG stages
-      return $ if isCyclic dag then error "Cycle detected!" else dag
+      let eitherDag = constructDAG stages
+      case eitherDag of
+        Left err -> error err
+        Right dag -> return dag

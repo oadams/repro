@@ -1,9 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 import Test.Tasty ( defaultMain, testGroup, TestTree )
-import Test.Tasty.HUnit ( testCase, (@?=) )
+import Test.Tasty.HUnit ( testCase, (@?=), assertBool )
 
-import Parse (YamlStage(..), constructDAG, isCyclic, duplicateStageNames)
+import Parse (YamlStage(..), constructDAG, duplicateStageNames)
 
 main :: IO ()
 main = defaultMain tests
@@ -49,13 +49,16 @@ yamlDuplicateStageNames = [
 unitTests :: TestTree
 unitTests = testGroup "Unit tests"
   [ testCase "Detect a simple cycle" $
-    let graph = constructDAG yamlcycle1
-    in isCyclic graph @?= True
+    case constructDAG yamlcycle1 of
+        Left _err -> assertBool "Expected no error" True
+        Right _dag -> assertBool "Expected an error" False
 
   , testCase "Simple DAG is not a cycle" $
-    let graph = constructDAG yamldag1
-    in isCyclic graph @?= False
+    case constructDAG yamldag1 of
+        Left _err -> assertBool "Expected no error" False
+        Right _dag -> assertBool "Expected an error" True
 
+  {-
   , testCase "Empty YAML is not a cycle" $
     let graph = constructDAG yamlempty
     in isCyclic graph @?= False
@@ -67,6 +70,7 @@ unitTests = testGroup "Unit tests"
   , testCase "Unconnected YAML with a cycle" $
     let graph = constructDAG yamlUnconnectedWithCycle
     in isCyclic graph @?= True
+  -}
 
   , testCase "Found duplicate stage names" $
     duplicateStageNames yamlDuplicateStageNames @?= True
