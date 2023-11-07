@@ -6,7 +6,8 @@ To-Do:
 - [x] Convert YAML into DAG. Raise errors if it's not a DAG.
 - [x] Topologically sort the DAG.
 - [x] Running ordered processes list
-- [ ] Refactoring
+- [ ] Normalizing indentation
+- [ ] Refactoring, checking in on TODOs
 - [ ] Support for dependencies that are tracked in git. If the hash of the dependency (or outputs) is different from when this pipeline was last run, then run the pipeline. If it is different than what was last on git, then tell or warn the user to commit them.
 - [ ] Similarly, support for dependencies that are tracked in git-annex.
 - [ ] Support incremental processing. YAML should support stages that operate on files in a directory indepedently.
