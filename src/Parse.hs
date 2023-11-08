@@ -49,21 +49,34 @@ constructDAG yamlStages
         dag = DAG $ foldr addDependencies initialMap yamlStages
         -- Step 1: Initialize the DAG with stages without dependencies
         initialMap :: Map.Map Text (Stage, [Text])
-        initialMap = Map.fromList $ map (\ys -> (yamlName ys, (Stage (yamlName ys) (yamlCmd ys), []))) yamlStages
+        initialMap = Map.fromList $ map 
+            (\ys -> (yamlName ys, (Stage (yamlName ys) (yamlCmd ys), [])))
+            yamlStages
         -- Step 2: For each YamlStage, find stages that have any of its 'outs' in their 'deps'
-        addDependencies :: YamlStage -> Map.Map Text (Stage, [Text]) -> Map.Map Text (Stage, [Text])
-        addDependencies ys stageMap = foldr (addDependence (yamlName ys)) stageMap yamlStages
+        addDependencies
+            :: YamlStage
+            -> Map.Map Text (Stage, [Text])
+            -> Map.Map Text (Stage, [Text])
+        addDependencies ys stageMap = foldr
+            (addDependence (yamlName ys)) stageMap yamlStages
           where
-            addDependence :: Text -> YamlStage -> Map.Map Text (Stage, [Text]) -> Map.Map Text (Stage, [Text])
+            addDependence
+                :: Text -> YamlStage
+                -> Map.Map Text (Stage, [Text])
+                -> Map.Map Text (Stage, [Text])
             addDependence sourceName ysTarget stageMapTarget =
                 if any (`elem` yamlDeps ysTarget) (yamlOuts ys)
                 -- If any of 'outs' is in 'deps' of the target, add the source as a dependency
-                then Map.adjust (\(stage, deps) -> (stage, sourceName : deps)) (yamlName ysTarget) stageMapTarget
+                then Map.adjust 
+                    (\(stage, deps) -> (stage, sourceName : deps))
+                    (yamlName ysTarget)
+                    stageMapTarget
                 else stageMapTarget
 
 -- TODO I also need to check that there aren't duplicate stage names in the YAML
 duplicateStageNames :: [YamlStage] -> Bool
-duplicateStageNames stages = length stages /= Set.size (Set.fromList [yamlName stage | stage <- stages])
+duplicateStageNames stages =
+    length stages /= Set.size (Set.fromList [yamlName stage | stage <- stages])
 
 -- This could be optimized by keeping track of an overall set of visited nodes between calls to each DFS. But this is fine for now.
 isCyclic :: DAG -> Bool
