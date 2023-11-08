@@ -35,7 +35,11 @@ packages:
 # These entries can reference officially published versions as well as
 # forks / in-progress versions pinned to a git hash. For example:
 #
-# extra-deps:
+#extra-deps:
+#  - third-party/git-annex
+#  - git: git://git-annex.branchable.com/
+#    commit: 99ec795c6aef3a47d147064f2472594771395dc5
+# - git-annex-10.20230926@sha256:8c81b7cede8fdfd005b585ca93fa1d5453f80440ef2e71e171e541ad8c1e87ea,26927
 # - acme-missiles-0.3
 # - git: https://github.com/commercialhaskell/stack.git
 #   commit: e7b331f14bcffb8367cd58fbfc8b40ec7642100a

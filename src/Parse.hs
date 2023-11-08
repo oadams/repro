@@ -12,8 +12,7 @@ module Parse
 
 import qualified Data.Set as Set
 import qualified Data.Map as Map
-import Data.YAML
-    ( (.!=), (.:), (.:?), decode1, withMap, FromYAML(..), Pos )
+import Data.YAML ( (.!=), (.:), (.:?), decode1, withMap, FromYAML(..), Pos )
 import Data.Text (Text)
 import qualified Data.ByteString.Lazy as BL
 
@@ -71,7 +70,7 @@ isCyclic :: DAG -> Bool
 isCyclic (DAG dagMap) = any hasCycle (Map.keys dagMap)
   where
     hasCycle :: Text -> Bool
-    hasCycle = dfs Set.empty
+    hasCycle node = dfs Set.empty node
 
     dfs :: Set.Set Text -> Text -> Bool
     dfs visited node
