@@ -6,7 +6,7 @@ To-Do:
 - [x] Convert YAML into DAG. Raise errors if it's not a DAG.
 - [x] Topologically sort the DAG.
 - [x] Running ordered processes list
-- [ ] Normalizing indentation among other things. Implement the [Kowainik style guide](https://kowainik.github.io/posts/2019-02-06-style-guide)
+- [ ] Implement the [Kowainik style guide](https://kowainik.github.io/posts/2019-02-06-style-guide)
 - [ ] Refactoring, checking in on TODOs in code.
 - [ ] Start checking `git hash-object` for all dependencies and then running stages that depend on them and stages that depend on those stages.
 - [ ] Support stipulation of incremental processing in the YAML. YAML should support stages that operate on files in a directory indepedently. This involves first deciding on appropriate YAML syntax for indicating that a directory should have the script applied to each file incrementally.

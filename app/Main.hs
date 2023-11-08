@@ -1,9 +1,6 @@
 module Main (main) where
 
-import Parse ( readDAG
-             , DAG(..)
-             , Stage(..)
-             )
+import Parse ( readDAG , DAG(..) , Stage(..))
 
 import Data.Maybe (catMaybes)
 import qualified Data.Map as Map

@@ -30,10 +30,10 @@ instance FromYAML YamlStage where
        <*> m .:? "deps" .!= []
        <*> m .:? "outs" .!= []
 
-data Stage = Stage {
-  name :: Text,
-  command  :: Text
-} deriving (Show, Eq)
+data Stage = Stage
+    { name :: Text
+    , command  :: Text
+    } deriving (Show, Eq)
 
 -- A DAG is represented by a map from a stage name to a stage and its dependencies
 newtype DAG = DAG (Map.Map Text (Stage, [Text])) deriving (Show)
@@ -41,25 +41,25 @@ newtype DAG = DAG (Map.Map Text (Stage, [Text])) deriving (Show)
 -- Adjusted constructDag to consider outs and deps for building the DAG
 constructDAG :: [YamlStage] -> Either String DAG
 constructDAG yamlStages
-  | duplicateStageNames yamlStages = Left "Error: Duplicate stage names."
-  | isCyclic dag = Left "Error: Graph contains cycles."
-  | otherwise = Right dag
-  where
-    dag :: DAG
-    dag = DAG $ foldr addDependencies initialMap yamlStages
-    -- Step 1: Initialize the DAG with stages without dependencies
-    initialMap :: Map.Map Text (Stage, [Text])
-    initialMap = Map.fromList $ map (\ys -> (yamlName ys, (Stage (yamlName ys) (yamlCmd ys), []))) yamlStages
-    -- Step 2: For each YamlStage, find stages that have any of its 'outs' in their 'deps'
-    addDependencies :: YamlStage -> Map.Map Text (Stage, [Text]) -> Map.Map Text (Stage, [Text])
-    addDependencies ys stageMap = foldr (addDependence (yamlName ys)) stageMap yamlStages
+    | duplicateStageNames yamlStages = Left "Error: Duplicate stage names."
+    | isCyclic dag = Left "Error: Graph contains cycles."
+    | otherwise = Right dag
       where
-        addDependence :: Text -> YamlStage -> Map.Map Text (Stage, [Text]) -> Map.Map Text (Stage, [Text])
-        addDependence sourceName ysTarget stageMapTarget =
-          if any (`elem` yamlDeps ysTarget) (yamlOuts ys)
-            -- If any of 'outs' is in 'deps' of the target, add the source as a dependency
-            then Map.adjust (\(stage, deps) -> (stage, sourceName : deps)) (yamlName ysTarget) stageMapTarget
-            else stageMapTarget
+        dag :: DAG
+        dag = DAG $ foldr addDependencies initialMap yamlStages
+        -- Step 1: Initialize the DAG with stages without dependencies
+        initialMap :: Map.Map Text (Stage, [Text])
+        initialMap = Map.fromList $ map (\ys -> (yamlName ys, (Stage (yamlName ys) (yamlCmd ys), []))) yamlStages
+        -- Step 2: For each YamlStage, find stages that have any of its 'outs' in their 'deps'
+        addDependencies :: YamlStage -> Map.Map Text (Stage, [Text]) -> Map.Map Text (Stage, [Text])
+        addDependencies ys stageMap = foldr (addDependence (yamlName ys)) stageMap yamlStages
+          where
+            addDependence :: Text -> YamlStage -> Map.Map Text (Stage, [Text]) -> Map.Map Text (Stage, [Text])
+            addDependence sourceName ysTarget stageMapTarget =
+                if any (`elem` yamlDeps ysTarget) (yamlOuts ys)
+                -- If any of 'outs' is in 'deps' of the target, add the source as a dependency
+                then Map.adjust (\(stage, deps) -> (stage, sourceName : deps)) (yamlName ysTarget) stageMapTarget
+                else stageMapTarget
 
 -- TODO I also need to check that there aren't duplicate stage names in the YAML
 duplicateStageNames :: [YamlStage] -> Bool
@@ -74,24 +74,23 @@ isCyclic (DAG dagMap) = any hasCycle (Map.keys dagMap)
 
     dfs :: Set.Set Text -> Text -> Bool
     dfs visited node
-      | node `Set.member` visited = True
-      | otherwise =
-          --let children = fromMaybe [] $ fmap snd (Map.lookup node dagMap)
-          let children = maybe [] snd (Map.lookup node dagMap)
-              visited' = Set.insert node visited
-          in any (dfs visited') children
-
+        | node `Set.member` visited = True
+        | otherwise =
+            --let children = fromMaybe [] $ fmap snd (Map.lookup node dagMap)
+            let children = maybe [] snd (Map.lookup node dagMap)
+                visited' = Set.insert node visited
+            in any (dfs visited') children
 
 -- TODO: Explore using liftIO, monad combinators, etc in order to effectly nest the Either values in the IO.
 -- That might not actually be more readable than this sort of indented nesting below. I'm not sure what would be better.
 readDAG :: FilePath -> IO DAG
 readDAG filepath = do
-  contents <- BL.readFile filepath
-  let eitherStages = decode1 contents :: Either (Pos, String) [YamlStage]
-  case eitherStages of
-    Left err -> error $ "Failed to parse YAML: " ++ snd err
-    Right stages -> do
-      let eitherDag = constructDAG stages
-      case eitherDag of
-        Left err -> error err
-        Right dag -> return dag
+    contents <- BL.readFile filepath
+    let eitherStages = decode1 contents :: Either (Pos, String) [YamlStage]
+    case eitherStages of
+        Left err -> error $ "Failed to parse YAML: " ++ snd err
+        Right stages -> do
+            let eitherDag = constructDAG stages
+            case eitherDag of
+                Left err -> error err
+                Right dag -> return dag
