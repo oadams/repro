@@ -1,6 +1,6 @@
 module Main (main) where
 
-import Parse ( readDAG , DAG(..) , Stage(..))
+import Parse ( readDag , Dag(..) , Stage(..))
 
 import Data.Maybe (catMaybes)
 import qualified Data.Map as Map
@@ -12,20 +12,20 @@ import System.Process
 -- I should construct the graph from YAML in Parse.hs but then in this module
 -- define isCyclic and then just call isCyclic when topologicalSort is called.
 -- That way topologicalSort never has to assume isCyclic has already been
--- called. An alternative option would be to define both a Graph type and a DAG
--- type, with some sort of confirmCyclic :: Graph -> Maybe DAG and
--- topologicalSort :: DAG -> [Stage], but that is probably not as good as
--- topologicalSort :: DAG -> Maybe [Stage] Or perhaps better still: Leave
--- isCyclic in Parse.hs with constructDAG, and leave the DAG type as is, but
--- make constructDAG return a Maybe DAG or an Either String DAG and have
--- constructDAG call isCyclic. That way, any DAG value is actually already
--- confirmed to be a DAG and doesn't rely on us checking it separately.
+-- called. An alternative option would be to define both a Graph type and a Dag
+-- type, with some sort of confirmCyclic :: Graph -> Maybe Dag and
+-- topologicalSort :: Dag -> [Stage], but that is probably not as good as
+-- topologicalSort :: Dag -> Maybe [Stage] Or perhaps better still: Leave
+-- isCyclic in Parse.hs with constructDag, and leave the Dag type as is, but
+-- make constructDag return a Maybe Dag or an Either String Dag and have
+-- constructDag call isCyclic. That way, any Dag value is actually already
+-- confirmed to be a Dag and doesn't rely on us checking it separately.
 
 -- For a topological sort:
 -- Find the nodes that don't have any dependencies
 -- Put them in the sorted list
 -- Remove dependencies to those nodes from other nodes in the graph
-tSort :: DAG -> [Text]
+tSort :: Dag -> [Text]
 tSort dag = go initialSources [] ndag
   where
     ndag = nameDag dag
@@ -45,17 +45,17 @@ tSort dag = go initialSources [] ndag
                     (Map.keysSet $ Map.filter null graph'')
             in go sources' sorted' graph''
 
--- Takes a DAG and reduces it to just a mapping from names of stages to the
+-- Takes a Dag and reduces it to just a mapping from names of stages to the
 -- names of the dependent stages
-nameDag :: DAG -> Map.Map Text [Text]
-nameDag (DAG mapDag) = Map.map getDeps mapDag
+nameDag :: Dag -> Map.Map Text [Text]
+nameDag (Dag mapDag) = Map.map getDeps mapDag
   where
     getDeps :: (Stage, [Text]) -> [Text]
     getDeps (_, deps) = deps
 
-getOrderedCommands :: DAG -> [Text] -> [Text]
-getOrderedCommands (DAG mapDAG) orderedStages =
-    let values = catMaybes $ map (`Map.lookup` mapDAG) orderedStages
+getOrderedCommands :: Dag -> [Text] -> [Text]
+getOrderedCommands (Dag mapDag) orderedStages =
+    let values = catMaybes $ map (`Map.lookup` mapDag) orderedStages
     in [command $ fst val | val <- values]
 
 runCommands :: [Text] -> IO()
@@ -70,7 +70,7 @@ runCommands (cmdtext:rest) = do
 
 main :: IO ()
 main = do
-    dag <- Parse.readDAG "repro.yaml"
+    dag <- Parse.readDag "repro.yaml"
     print dag
     let orderedStages = tSort dag
     print orderedStages

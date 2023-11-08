@@ -1,11 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Parse
-    ( readDAG
+    ( readDag
     , YamlStage(..)
     , Stage(..)
-    , DAG(..)
-    , constructDAG
+    , Dag(..)
+    , constructDag
     , isCyclic
     , duplicateStageNames
     ) where
@@ -35,19 +35,19 @@ data Stage = Stage
     , command  :: Text
     } deriving (Show, Eq)
 
--- A DAG is represented by a map from a stage name to a stage and its dependencies
-newtype DAG = DAG (Map.Map Text (Stage, [Text])) deriving (Show)
+-- A Dag is represented by a map from a stage name to a stage and its dependencies
+newtype Dag = Dag (Map.Map Text (Stage, [Text])) deriving (Show)
 
--- Adjusted constructDag to consider outs and deps for building the DAG
-constructDAG :: [YamlStage] -> Either String DAG
-constructDAG yamlStages
+-- Adjusted constructDag to consider outs and deps for building the Dag
+constructDag :: [YamlStage] -> Either String Dag
+constructDag yamlStages
     | duplicateStageNames yamlStages = Left "Error: Duplicate stage names."
     | isCyclic dag = Left "Error: Graph contains cycles."
     | otherwise = Right dag
       where
-        dag :: DAG
-        dag = DAG $ foldr addDependencies initialMap yamlStages
-        -- Step 1: Initialize the DAG with stages without dependencies
+        dag :: Dag
+        dag = Dag $ foldr addDependencies initialMap yamlStages
+        -- Step 1: Initialize the Dag with stages without dependencies
         initialMap :: Map.Map Text (Stage, [Text])
         initialMap = Map.fromList $ map 
             (\ys -> (yamlName ys, (Stage (yamlName ys) (yamlCmd ys), [])))
@@ -79,8 +79,8 @@ duplicateStageNames stages =
     length stages /= Set.size (Set.fromList [yamlName stage | stage <- stages])
 
 -- This could be optimized by keeping track of an overall set of visited nodes between calls to each DFS. But this is fine for now.
-isCyclic :: DAG -> Bool
-isCyclic (DAG dagMap) = any hasCycle (Map.keys dagMap)
+isCyclic :: Dag -> Bool
+isCyclic (Dag dagMap) = any hasCycle (Map.keys dagMap)
   where
     hasCycle :: Text -> Bool
     hasCycle node = dfs Set.empty node
@@ -96,14 +96,14 @@ isCyclic (DAG dagMap) = any hasCycle (Map.keys dagMap)
 
 -- TODO: Explore using liftIO, monad combinators, etc in order to effectly nest the Either values in the IO.
 -- That might not actually be more readable than this sort of indented nesting below. I'm not sure what would be better.
-readDAG :: FilePath -> IO DAG
-readDAG filepath = do
+readDag :: FilePath -> IO Dag
+readDag filepath = do
     contents <- BL.readFile filepath
     let eitherStages = decode1 contents :: Either (Pos, String) [YamlStage]
     case eitherStages of
         Left err -> error $ "Failed to parse YAML: " ++ snd err
         Right stages -> do
-            let eitherDag = constructDAG stages
+            let eitherDag = constructDag stages
             case eitherDag of
                 Left err -> error err
                 Right dag -> return dag
