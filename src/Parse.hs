@@ -31,12 +31,12 @@ instance FromYAML YamlStage where
        <*> m .:? "outs" .!= []
 
 data Stage = Stage
-    { name :: Text
+    { deps :: [Text]
     , command  :: Text
     } deriving (Show, Eq)
 
 -- A Dag is represented by a map from a stage name to a stage and its dependencies
-newtype Dag = Dag (Map.Map Text (Stage, [Text])) deriving (Show)
+newtype Dag = Dag (Map.Map Text Stage) deriving (Show)
 
 -- Adjusted constructDag to consider outs and deps for building the Dag
 constructDag :: [YamlStage] -> Either String Dag
@@ -48,27 +48,28 @@ constructDag yamlStages
         dag :: Dag
         dag = Dag $ foldr addDependencies initialMap yamlStages
         -- Step 1: Initialize the Dag with stages without dependencies
-        initialMap :: Map.Map Text (Stage, [Text])
+        initialMap :: Map.Map Text Stage
         initialMap = Map.fromList $ map 
-            (\ys -> (yamlName ys, (Stage (yamlName ys) (yamlCmd ys), [])))
+            (\ys -> (yamlName ys, Stage [] (yamlCmd ys)))
             yamlStages
         -- Step 2: For each YamlStage, find stages that have any of its 'outs' in their 'deps'
         addDependencies
             :: YamlStage
-            -> Map.Map Text (Stage, [Text])
-            -> Map.Map Text (Stage, [Text])
+            -> Map.Map Text Stage
+            -> Map.Map Text Stage
         addDependencies ys stageMap = foldr
             (addDependence (yamlName ys)) stageMap yamlStages
           where
             addDependence
-                :: Text -> YamlStage
-                -> Map.Map Text (Stage, [Text])
-                -> Map.Map Text (Stage, [Text])
+                :: Text
+                -> YamlStage
+                -> Map.Map Text Stage
+                -> Map.Map Text Stage
             addDependence sourceName ysTarget stageMapTarget =
                 if any (`elem` yamlDeps ysTarget) (yamlOuts ys)
                 -- If any of 'outs' is in 'deps' of the target, add the source as a dependency
                 then Map.adjust 
-                    (\(stage, deps) -> (stage, sourceName : deps))
+                    (\(Stage sdeps cmd) -> Stage (sourceName : sdeps) cmd)
                     (yamlName ysTarget)
                     stageMapTarget
                 else stageMapTarget
@@ -90,7 +91,7 @@ isCyclic (Dag dagMap) = any hasCycle (Map.keys dagMap)
         | node `Set.member` visited = True
         | otherwise =
             --let children = fromMaybe [] $ fmap snd (Map.lookup node dagMap)
-            let children = maybe [] snd (Map.lookup node dagMap)
+            let children = maybe [] deps (Map.lookup node dagMap)
                 visited' = Set.insert node visited
             in any (dfs visited') children
 

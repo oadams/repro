@@ -48,15 +48,12 @@ tSort dag = go initialSources [] ndag
 -- Takes a Dag and reduces it to just a mapping from names of stages to the
 -- names of the dependent stages
 nameDag :: Dag -> Map.Map Text [Text]
-nameDag (Dag mapDag) = Map.map getDeps mapDag
-  where
-    getDeps :: (Stage, [Text]) -> [Text]
-    getDeps (_, deps) = deps
+nameDag (Dag mapDag) = Map.map deps mapDag
 
 getOrderedCommands :: Dag -> [Text] -> [Text]
 getOrderedCommands (Dag mapDag) orderedStages =
     let values = catMaybes $ map (`Map.lookup` mapDag) orderedStages
-    in [command $ fst val | val <- values]
+    in [command val | val <- values]
 
 runCommands :: [Text] -> IO()
 runCommands [] = return ()
