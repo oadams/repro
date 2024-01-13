@@ -97,6 +97,8 @@ isCyclic (Dag dagMap) = any hasCycle (Map.keys dagMap)
 
 -- TODO: Explore using liftIO, monad combinators, etc in order to effectly nest the Either values in the IO.
 -- That might not actually be more readable than this sort of indented nesting below. I'm not sure what would be better.
+-- Another option here would be to explore raising IO exceptions. This would mean no monad transformers are needed since the error handling would
+-- be part of the IO monad.
 readDag :: FilePath -> IO Dag
 readDag filepath = do
     contents <- BL.readFile filepath
