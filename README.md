@@ -14,7 +14,7 @@ To-Do:
 - [ ] Address all the warnings at compile time
 - [ ] Improve error reporting at all stages of potential failure.
 - [ ] Raise warnings if there are programs specified in the command that aren't local scripts.
-- [ ] Rename from git-annex-repro to repro.
+- [x] Rename from git-annex-repro to repro.
 - [ ] Learn about dealing with IO exceptions in Haskell and thoroughly check our bases there.
 
 This tool is essentially an independent implementation of [DVC repro](https://dvc.org/doc/command-reference/repro) that does not depend on DVC and offers support for incremental processing. Currently we are not there yet. Mention that it does depend on `git` though for the hashing.
@@ -28,7 +28,7 @@ Emphasize testing.
 Talk about building with stack, and other requirements such as getting haskell. Eventually should release executables. Currently we do:
 ```
 stack build
-stack exec git-annex-repro-exe
+stack exec repro-exe
 ```
 
 Input data format. I'd like to move towards a place where the YAML follows the same format as the dvc.yaml for defining stages, but fo the sake of implementation simplicity, currently the YAML takes the form:

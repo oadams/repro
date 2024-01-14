@@ -1,4 +1,4 @@
-# Changelog for `git-annex-repro`
+# Changelog for `repro`
 
 All notable changes to this project will be documented in this file.
 

@@ -19,7 +19,7 @@ gitHash path = do
     return ((T.strip . T.pack) gitOutput)
 
 gatherFilePaths :: Dag -> [Text] -> [Text]
-gatherFilePaths (Dag mapDag) orderedStages = concatMap deps orderedStages'
+gatherFilePaths (Dag mapDag) orderedStages = concatMap stageDeps orderedStages'
   where
     orderedStages' = catMaybes $ map (`Map.lookup` mapDag) orderedStages
     
@@ -61,7 +61,7 @@ tSort dag = go initialSources [] ndag
 -- Takes a Dag and reduces it to just a mapping from names of stages to the
 -- names of the dependent stages
 nameDag :: Dag -> Map Text [Text]
-nameDag (Dag mapDag) = Map.map deps mapDag
+nameDag (Dag mapDag) = Map.map stageDeps mapDag
 
 getOrderedCommands :: Dag -> [Text] -> [Text]
 getOrderedCommands (Dag mapDag) orderedStages =

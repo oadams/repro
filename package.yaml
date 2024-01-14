@@ -1,6 +1,6 @@
-name:                git-annex-repro
+name:                repro
 version:             0.1.0.0
-github:              "oadams/git-annex-repro"
+github:              "oadams/repro"
 license:             BSD-3-Clause
 author:              "Oliver Adams"
 maintainer:          "oliver.adams@gmail.com"
@@ -17,7 +17,7 @@ extra-source-files:
 # To avoid duplicated efforts in documentation and dealing with the
 # complications of embedding Haddock markup inside cabal files, it is
 # common to point users to the README.md file.
-description:         Please see the README on GitHub at <https://github.com/oadams/git-annex-repro#readme>
+description:         Please see the README on GitHub at <https://github.com/oadams/repro#readme>
 
 dependencies:
 - base >= 4.7 && < 5
@@ -42,7 +42,7 @@ library:
   source-dirs: src
 
 executables:
-  git-annex-repro-exe:
+  repro-exe:
     main:                Main.hs
     source-dirs:         app
     ghc-options:
@@ -50,14 +50,14 @@ executables:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - git-annex-repro
+    - repro
     - containers
     - process
     - HsYAML
     - text
 
 tests:
-  git-annex-repro-test:
+  repro-test:
     main:                Spec.hs
     source-dirs:         test
     ghc-options:
@@ -65,6 +65,6 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - git-annex-repro
+    - repro
     - tasty
     - tasty-hunit
