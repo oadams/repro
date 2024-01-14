@@ -4,8 +4,9 @@ import Parse ( readDag , Dag(..) , Stage(..) )
 
 import Data.Maybe (catMaybes)
 import qualified Data.Map as Map
-import Data.Text (Text)
+import Data.Map (Map)
 import qualified Data.Text as T
+import Data.Text (Text)
 import qualified Data.Set as Set
 import System.Directory (doesFileExist)
 import System.Exit ( ExitCode(ExitFailure, ExitSuccess) )
@@ -16,6 +17,12 @@ gitHash :: FilePath -> IO Text
 gitHash path = do
     gitOutput <- readProcess "git" ["hash-object", path] ""
     return ((T.strip . T.pack) gitOutput)
+
+gatherFilePaths :: Dag -> [Text] -> [Text]
+gatherFilePaths (Dag mapDag) orderedStages = concatMap deps orderedStages'
+  where
+    orderedStages' = catMaybes $ map (`Map.lookup` mapDag) orderedStages
+    
 
 -- Need a function that takes in some dependency specified in the dag and:
 -- (a) determines if it is a file
@@ -36,7 +43,7 @@ tSort dag = go initialSources [] ndag
   where
     ndag = nameDag dag
     initialSources = Map.keysSet $ Map.filter null ndag
-    go :: Set.Set Text -> [Text] -> Map.Map Text [Text] -> [Text]
+    go :: Set.Set Text -> [Text] -> Map Text [Text] -> [Text]
     go sources sorted graph
         | Set.null sources = reverse sorted
         | otherwise =
@@ -53,7 +60,7 @@ tSort dag = go initialSources [] ndag
 
 -- Takes a Dag and reduces it to just a mapping from names of stages to the
 -- names of the dependent stages
-nameDag :: Dag -> Map.Map Text [Text]
+nameDag :: Dag -> Map Text [Text]
 nameDag (Dag mapDag) = Map.map deps mapDag
 
 getOrderedCommands :: Dag -> [Text] -> [Text]
@@ -61,7 +68,7 @@ getOrderedCommands (Dag mapDag) orderedStages =
     let values = catMaybes $ map (`Map.lookup` mapDag) orderedStages
     in [command val | val <- values]
 
-runCommands :: [Text] -> IO()
+runCommands :: [Text] -> IO ()
 runCommands [] = return ()
 runCommands (cmdtext:rest) = do
     let cmd = T.unpack cmdtext
@@ -74,9 +81,11 @@ runCommands (cmdtext:rest) = do
 main :: IO ()
 main = do
     dag <- Parse.readDag "repro.yaml"
-    print dag
+    print $ "DAG: " <> show dag
     let orderedStages = tSort dag
-    print orderedStages
+    print $ "orderedStages: " <> show orderedStages
     let orderedCommands = getOrderedCommands dag orderedStages
-    print orderedCommands
+    print $ "orderedCommands: " <> show orderedCommands
+    let filePaths = gatherFilePaths dag orderedStages
+    print $ "deps: "  <> show filePaths
     runCommands orderedCommands

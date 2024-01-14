@@ -31,7 +31,7 @@ instance FromYAML YamlStage where
        <*> m .:? "outs" .!= []
 
 data Stage = Stage
-    { deps :: [Text]
+    { stageDeps :: [Text]
     , command  :: Text
     } deriving (Show, Eq)
 
@@ -91,7 +91,7 @@ isCyclic (Dag dagMap) = any hasCycle (Map.keys dagMap)
         | node `Set.member` visited = True
         | otherwise =
             --let children = fromMaybe [] $ fmap snd (Map.lookup node dagMap)
-            let children = maybe [] deps (Map.lookup node dagMap)
+            let children = maybe [] stageDeps (Map.lookup node dagMap)
                 visited' = Set.insert node visited
             in any (dfs visited') children
 
