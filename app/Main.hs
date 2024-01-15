@@ -18,6 +18,7 @@ gitHash path = do
     gitOutput <- readProcess "git" ["hash-object", path] ""
     return ((T.strip . T.pack) gitOutput)
 
+-- 
 gatherFilePaths :: Dag -> [Text] -> [Text]
 gatherFilePaths (Dag mapDag) orderedStages = concatMap stageDeps orderedStages'
   where
@@ -32,6 +33,23 @@ gatherFilePaths (Dag mapDag) orderedStages = concatMap stageDeps orderedStages'
 --hashDep :: FilePath -> IO String
 --hashDep path
 --    | doesFileExist path = gitHash path
+
+
+-- Given a stage name and a Dag, produces a Dag subset that consists only of dependencies of the specified stage and their dependencies
+-- Just do a breadth-first search for this.
+subDag :: Text -> Dag -> Dag
+subDag target (Dag mapDag) = subDag' [target] (Dag Map.empty)
+  where 
+    getDeps :: Text -> [Text]
+    getDeps stageName = case Map.lookup stageName mapDag of
+        Nothing -> []
+        Just stage -> stageDeps stage
+    deps = getDeps target
+    subDag' :: [Text] -> Dag -> Dag
+    subDag' [] visited = visited
+    subDag' deps (Dag visited) = subDag' (concat $ map getDeps deps) (Dag (Map.union depsMap visited))
+      where
+        depsMap = Map.fromList $ filter (\(k, _) -> k `elem` deps) $ Map.toList mapDag
 
 
 -- For a topological sort:
@@ -82,6 +100,7 @@ main :: IO ()
 main = do
     dag <- Parse.readDag "repro.yaml"
     print $ "DAG: " <> show dag
+    print $ "Stage 3 subdag: " <> show (subDag (T.pack "stage3") dag)
     let orderedStages = tSort dag
     print $ "orderedStages: " <> show orderedStages
     let orderedCommands = getOrderedCommands dag orderedStages
