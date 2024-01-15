@@ -75,10 +75,27 @@ writeLock lockMap = do
     let bs = encode lockMap
     B.writeFile lockFileName bs
 
+
+runStage :: Stage -> IO ExitCode
+runStage stage = do
+    let cmd = T.unpack command stage
+    putStrLn $ cmd
+    system $ cmd
+
 runDag :: Text -> Dag -> Map FilePath Text -> IO ()
-runDag target dag@(Dag mapDag) lockMap = undefined --Need to sequence runStage over the orderedStages
+runDag target dag@(Dag mapDag) lockMap = runDag' orderedStages
   where
-    orderedStages = tSort $ subDag target dag
+    orderedStageNames = tSort $ subDag target dag -- A topologically sorted list of stages that the target depends on
+    orderedStages = catMaybes $ map (`Map.lookup` mapDag) orderedStageNames
+    runStages :: [Stage] -> IO ()
+    runStages [] = return ()
+    runStages (stage:rest) = do
+        exitCode <- runStage 
+        case exitCode of 
+            ExitSuccess -> runStages rest
+            ExitFailure _ -> putStrLn $ "Command failed: " ++ cmd
+
+    {-- Need to incorporate the below logic into runDag/runStage 
     runStage :: Text -> IO ()
     runStage stageName = do
         let maybeStage = Map.lookup stageName mapDag
@@ -89,6 +106,7 @@ runDag target dag@(Dag mapDag) lockMap = undefined --Need to sequence runStage o
         -- Also need shouldRunStage to be based on a check of the outputs of the stage
         if shouldRunStage
             then let cmd = T.unpack $ command stage
+    --}
 
 -- For a topological sort:
 -- Find the nodes that don't have any dependencies
