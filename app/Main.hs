@@ -11,6 +11,8 @@ import qualified Data.Set as Set
 import System.Directory (doesFileExist)
 import System.Exit ( ExitCode(ExitFailure, ExitSuccess) )
 import System.Process
+import Data.Aeson (decode)
+import qualified Data.ByteString.Lazy.Char8 as B
 
 
 gitHash :: FilePath -> IO Text
@@ -51,6 +53,34 @@ subDag target (Dag mapDag) = subDag' [target] (Dag Map.empty)
       where
         depsMap = Map.fromList $ filter (\(k, _) -> k `elem` deps) $ Map.toList mapDag
 
+
+-- Reads from file a mapping from filepaths to their git hash.
+readLock :: FilePath -> IO (Map FilePath Text)
+readLock lockPath = do
+    exists <- doesFileExist lockPath
+    if exists
+        then readLock'
+        else return Map.empty
+      where
+        readLock' :: IO (Map FilePath Text)
+        readLock' = do
+          jsonContent <- B.readFile "lock.json"
+          let lockMap = decode jsonContent :: Maybe (Map FilePath Text)
+          case lockMap of
+              Nothing -> return Map.empty
+              Just m -> return m
+
+
+{--
+runDag :: Text -> Dag -> IO ()
+runDag target dag = --Need to sequence runStage over the orderedStages
+  where
+    orderedStages = tSort $ subDag target dag
+    runStage :: Text -> IO ()
+    runStage stage = -- To fill
+      where
+        depHashes = map (gitHash . T.unpack) (deps stage) -- Need to calculate the hashes of these deps and then compare them to hashes read from lockfile. For now we'll use FilePaths = [String] but need to circle back around to more efficient ways of doing this.
+--}
 
 -- For a topological sort:
 -- Find the nodes that don't have any dependencies
@@ -99,6 +129,8 @@ runCommands (cmdtext:rest) = do
 main :: IO ()
 main = do
     dag <- Parse.readDag "repro.yaml"
+    lockMap <- readLock "lock.json"
+    print $ "lockMap: " <> show lockMap
     print $ "DAG: " <> show dag
     print $ "Stage 3 subdag: " <> show (subDag (T.pack "stage3") dag)
     let orderedStages = tSort dag
