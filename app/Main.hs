@@ -11,9 +11,11 @@ import qualified Data.Set as Set
 import System.Directory (doesFileExist)
 import System.Exit ( ExitCode(ExitFailure, ExitSuccess) )
 import System.Process
-import Data.Aeson (decode)
+import Data.Aeson (decode, encode)
 import qualified Data.ByteString.Lazy.Char8 as B
 
+lockFileName :: FilePath
+lockFileName = "lock.json"
 
 gitHash :: FilePath -> IO Text
 gitHash path = do
@@ -43,15 +45,12 @@ subDag :: Text -> Dag -> Dag
 subDag target (Dag mapDag) = subDag' [target] (Dag Map.empty)
   where 
     getDeps :: Text -> [Text]
-    getDeps stageName = case Map.lookup stageName mapDag of
-        Nothing -> []
-        Just stage -> stageDeps stage
-    deps = getDeps target
+    getDeps stageName = maybe [] stageDeps (Map.lookup stageName mapDag)
     subDag' :: [Text] -> Dag -> Dag
     subDag' [] visited = visited
-    subDag' deps (Dag visited) = subDag' (concat $ map getDeps deps) (Dag (Map.union depsMap visited))
+    subDag' deps' (Dag visited) = subDag' (concatMap getDeps deps') (Dag (Map.union depsMap visited))
       where
-        depsMap = Map.fromList $ filter (\(k, _) -> k `elem` deps) $ Map.toList mapDag
+        depsMap = Map.fromList $ filter (\(k, _) -> k `elem` deps') $ Map.toList mapDag
 
 
 -- Reads from file a mapping from filepaths to their git hash.
@@ -64,23 +63,32 @@ readLock lockPath = do
       where
         readLock' :: IO (Map FilePath Text)
         readLock' = do
-          jsonContent <- B.readFile "lock.json"
+          jsonContent <- B.readFile lockFileName
           let lockMap = decode jsonContent :: Maybe (Map FilePath Text)
           case lockMap of
               Nothing -> return Map.empty
               Just m -> return m
 
 
-{--
-runDag :: Text -> Dag -> IO ()
-runDag target dag = --Need to sequence runStage over the orderedStages
+writeLock :: Map FilePath Text -> IO ()
+writeLock lockMap = do
+    let bs = encode lockMap
+    B.writeFile lockFileName bs
+
+runDag :: Text -> Dag -> Map FilePath Text -> IO ()
+runDag target dag@(Dag mapDag) lockMap = undefined --Need to sequence runStage over the orderedStages
   where
     orderedStages = tSort $ subDag target dag
     runStage :: Text -> IO ()
-    runStage stage = -- To fill
-      where
-        depHashes = map (gitHash . T.unpack) (deps stage) -- Need to calculate the hashes of these deps and then compare them to hashes read from lockfile. For now we'll use FilePaths = [String] but need to circle back around to more efficient ways of doing this.
---}
+    runStage stageName = do
+        let maybeStage = Map.lookup stageName mapDag
+        depHashes <- case maybeStage of
+            Nothing -> error "Stage not in DAG"
+            Just stage -> sequence $ Map.fromList $ map (\depFilePath -> (T.unpack depFilePath, gitHash $ T.unpack depFilePath)) (deps stage) -- Need to calculate the hashes of these deps and then compare them to hashes read from lockfile. For now we'll use FilePaths = [String] but need to circle back around to more efficient ways of doing this.
+        let shouldRunStage = Map.union lockMap depHashes /= depHashes -- If the subset of lockMap that contains just depHashes keys is not the same as depHashes, then we need to run the stage
+        -- Also need shouldRunStage to be based on a check of the outputs of the stage
+        if shouldRunStage
+            then let cmd = T.unpack $ command stage
 
 -- For a topological sort:
 -- Find the nodes that don't have any dependencies
@@ -116,6 +124,7 @@ getOrderedCommands (Dag mapDag) orderedStages =
     let values = catMaybes $ map (`Map.lookup` mapDag) orderedStages
     in [command val | val <- values]
 
+
 runCommands :: [Text] -> IO ()
 runCommands [] = return ()
 runCommands (cmdtext:rest) = do
@@ -129,7 +138,7 @@ runCommands (cmdtext:rest) = do
 main :: IO ()
 main = do
     dag <- Parse.readDag "repro.yaml"
-    lockMap <- readLock "lock.json"
+    lockMap <- readLock lockFileName
     print $ "lockMap: " <> show lockMap
     print $ "DAG: " <> show dag
     print $ "Stage 3 subdag: " <> show (subDag (T.pack "stage3") dag)

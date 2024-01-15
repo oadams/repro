@@ -28,8 +28,8 @@ instance FromYAML YamlStage where
 
 data Stage = Stage
     { stageDeps :: [Text]
-    , deps :: [Text] -- These are file paths
-    , outs :: [Text] -- These are file paths
+    , deps :: [Text] -- These are file paths (String). Need to some how change the parsing for these
+    , outs :: [Text] -- These are file paths (String). Need to somehow change the parsing for these or use a Text-based FilePath
     , command  :: Text
     } deriving (Show, Eq)
 
