@@ -1,13 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Parse
-    ( readDag
-    , YamlStage(..)
-    , Stage(..)
+    ( Stage(..)
     , Dag(..)
-    , constructDag
-    , isCyclic
-    , duplicateStageNames
+    , readDag
     ) where
 
 import qualified Data.Set as Set
@@ -32,13 +28,14 @@ instance FromYAML YamlStage where
 
 data Stage = Stage
     { stageDeps :: [Text]
+    , deps :: [Text] -- These are file paths
+    , outs :: [Text] -- These are file paths
     , command  :: Text
     } deriving (Show, Eq)
 
 -- A Dag is represented by a map from a stage name to a stage and its dependencies
 newtype Dag = Dag (Map.Map Text Stage) deriving (Show)
 
--- Adjusted constructDag to consider outs and deps for building the Dag
 constructDag :: [YamlStage] -> Either String Dag
 constructDag yamlStages
     | duplicateStageNames yamlStages = Left "Error: Duplicate stage names."
@@ -50,26 +47,18 @@ constructDag yamlStages
         -- Step 1: Initialize the Dag with stages without dependencies
         initialMap :: Map.Map Text Stage
         initialMap = Map.fromList $ map 
-            (\ys -> (yamlName ys, Stage [] (yamlCmd ys)))
+            (\ys -> (yamlName ys, Stage [] (yamlDeps ys) (yamlOuts ys) (yamlCmd ys)))
             yamlStages
-        -- Step 2: For each YamlStage, find stages that have any of its 'outs' in their 'deps'
-        addDependencies
-            :: YamlStage
-            -> Map.Map Text Stage
-            -> Map.Map Text Stage
-        addDependencies ys stageMap = foldr
-            (addDependence (yamlName ys)) stageMap yamlStages
+        -- Step 2: For each YamlStage ys, find other stages that have any of the 'outs' of ys in their 'deps'
+        addDependencies :: YamlStage -> Map.Map Text Stage -> Map.Map Text Stage
+        addDependencies ys stageMap = foldr (addDependence (yamlName ys)) stageMap yamlStages
           where
-            addDependence
-                :: Text
-                -> YamlStage
-                -> Map.Map Text Stage
-                -> Map.Map Text Stage
+            addDependence :: Text -> YamlStage -> Map.Map Text Stage -> Map.Map Text Stage
             addDependence sourceName ysTarget stageMapTarget =
                 if any (`elem` yamlDeps ysTarget) (yamlOuts ys)
                 -- If any of 'outs' is in 'deps' of the target, add the source as a dependency
                 then Map.adjust 
-                    (\(Stage sdeps cmd) -> Stage (sourceName : sdeps) cmd)
+                    (\(Stage sdeps deps' outs' cmd) -> Stage (sourceName : sdeps) deps' outs' cmd)
                     (yamlName ysTarget)
                     stageMapTarget
                 else stageMapTarget
